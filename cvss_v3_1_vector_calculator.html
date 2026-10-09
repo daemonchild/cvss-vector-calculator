@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CVSS v3.1 Vector Calculator</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            cyber: {
+              bg: '#0a0d14',
+              card: '#111622',
+              border: '#1e293b',
+              accent: '#06b6d4'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #080b11;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.08) 0px, transparent 50%);
+      background-attachment: fixed;
+    }
+    .metric-btn {
+      transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .metric-btn.active {
+      box-shadow: 0 0 12px -2px rgba(6, 182, 212, 0.3);
+    }
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+  </style>
+</head>
+<body class="text-slate-200 font-sans min-h-screen flex flex-col justify-between selection:bg-cyan-500 selection:text-black">
+
+  <header class="border-b border-slate-800 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-black text-xl shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-shield-halved"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+            CVSS v3.1 Calculator
+            <span class="text-xs font-mono font-medium bg-cyan-950 text-cyan-400 border border-cyan-800 px-2 py-0.5 rounded-full">FIRST Spec</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Common Vulnerability Scoring System Vector Calculator & Analyzer</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2">
+        <button id="btn-copy-summary" onclick="copyExecutiveSummary()" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-regular fa-copy"></i>
+          <span class="hidden md:inline">Copy Report Summary</span>
+        </button>
+        <button id="btn-reset" onclick="resetToDefault()" class="text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-2 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-rotate-left"></i>
+          <span>Reset</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full space-y-6">
+
+    <!-- Vector Input & Presets Bar -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <label for="vector-input" class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-terminal text-cyan-400"></i> CVSS Vector String
+        </label>
+        <div id="vector-status" class="text-xs font-mono flex items-center gap-1.5 text-emerald-400">
+          <i class="fa-solid fa-circle-check"></i> Valid Vector
+        </div>
+      </div>
+
+      <div class="relative flex items-center">
+        <input 
+          type="text" 
+          id="vector-input" 
+          spellcheck="false"
+          value="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H" 
+          class="w-full bg-slate-950/90 text-cyan-300 font-mono text-sm sm:text-base px-4 py-3 pr-24 rounded-xl border border-slate-700 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition shadow-inner"
+          placeholder="CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+        />
+        <div class="absolute right-2 flex items-center gap-1">
+          <button onclick="copyVectorString()" title="Copy Vector String" class="p-2 text-slate-400 hover:text-cyan-400 hover:bg-slate-800 rounded-lg transition">
+            <i class="fa-regular fa-clone"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Validation Error Box (Hidden by default) -->
+      <div id="error-container" class="hidden bg-red-950/40 border border-red-800/60 rounded-xl p-3 text-xs text-red-300 space-y-1">
+        <div class="font-bold flex items-center gap-2 text-red-400">
+          <i class="fa-solid fa-triangle-exclamation"></i> Invalid Vector Format
+        </div>
+        <ul id="error-list" class="list-disc list-inside space-y-0.5 text-red-300/90 font-mono"></ul>
+      </div>
+
+      <!-- Presets -->
+      <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-800/80">
+        <span class="text-xs font-medium text-slate-400 mr-1 flex items-center gap-1">
+          <i class="fa-solid fa-bolt text-amber-400 text-[10px]"></i> Presets:
+        </span>
+        <button onclick="applyPreset('CVE-2021-44228')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          Log4Shell (10.0)
+        </button>
+        <button onclick="applyPreset('CVE-2017-0144')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          EternalBlue (9.8)
+        </button>
+        <button onclick="applyPreset('CVE-2014-0160')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          Heartbleed (7.5)
+        </button>
+        <button onclick="applyPreset('XSS-REFLECTED')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          Reflected XSS (6.1)
+        </button>
+        <button onclick="applyPreset('LOCAL-PRIV-ESC')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          Local PrivEsc (7.8)
+        </button>
+        <button onclick="applyPreset('LOW-IMPACT')" class="text-xs font-mono bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1 rounded-lg transition">
+          Low Info Leak (1.8)
+        </button>
+      </div>
+    </section>
+
+    <!-- Score Dashboard Grid -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <!-- Base Score Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between relative overflow-hidden group">
+        <div class="absolute -right-10 -bottom-10 w-40 h-40 rounded-full bg-red-500/5 blur-3xl group-hover:bg-cyan-500/10 transition"></div>
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">CVSS v3.1 Base Score</span>
+            <span id="severity-badge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-red-500/20 text-red-400 border border-red-500/30">
+              Critical
+            </span>
+          </div>
+
+          <div class="flex items-baseline gap-3 my-2">
+            <span id="score-display" class="text-6xl font-black font-mono tracking-tight text-white">9.8</span>
+            <span class="text-slate-500 font-mono text-xl">/ 10.0</span>
+          </div>
+        </div>
+
+        <div class="space-y-2 mt-4 pt-4 border-t border-slate-800">
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Overall Score Range</span>
+            <span id="score-range-text" class="font-mono text-slate-300">9.0 - 10.0 (Critical)</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="score-bar" class="bg-gradient-to-r from-red-500 to-rose-600 h-full rounded-full transition-all duration-500" style="width: 98%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Likelihood (Exploitability) Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-bullseye text-cyan-400"></i> Likelihood (Exploitability)
+            </span>
+            <span id="exploitability-rating" class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase bg-slate-800 text-cyan-400 border border-cyan-800">
+              Critical
+            </span>
+          </div>
+
+          <div class="flex items-baseline gap-2 my-2">
+            <span id="exploitability-score" class="text-4xl font-bold font-mono text-white">3.9</span>
+            <span class="text-slate-500 font-mono text-sm">/ 3.9 max</span>
+          </div>
+
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Measures ease and technical requirements needed to execute an attack.
+          </p>
+        </div>
+
+        <div class="space-y-2 mt-4 pt-4 border-t border-slate-800">
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Exploitability Sub-Score</span>
+            <span id="exploitability-percent" class="font-mono text-cyan-400">100%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="exploitability-bar" class="bg-cyan-500 h-full rounded-full transition-all duration-500" style="width: 100%"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Impact Card -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-explosion text-amber-400"></i> Impact Score
+            </span>
+            <span id="impact-rating" class="px-2.5 py-0.5 rounded-md text-xs font-bold uppercase bg-slate-800 text-amber-400 border border-amber-800">
+              Critical
+            </span>
+          </div>
+
+          <div class="flex items-baseline gap-2 my-2">
+            <span id="impact-score" class="text-4xl font-bold font-mono text-white">5.9</span>
+            <span class="text-slate-500 font-mono text-sm">/ 6.0 max</span>
+          </div>
+
+          <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+            Measures direct consequences to Confidentiality, Integrity, and Availability.
+          </p>
+        </div>
+
+        <div class="space-y-2 mt-4 pt-4 border-t border-slate-800">
+          <div class="flex justify-between text-xs text-slate-400">
+            <span>Impact Sub-Score (ISS: <span id="iss-score">0.915</span>)</span>
+            <span id="impact-percent" class="font-mono text-amber-400">98%</span>
+          </div>
+          <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+            <div id="impact-bar" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 98%"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Interactive Metric Selection Panels -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-cyan-400"></i> Base Metric Selector
+        </h2>
+        <span class="text-xs text-slate-400 hidden sm:inline">Click any metric option to update vector and recalculate scores</span>
+      </div>
+
+      <!-- Exploitability Metrics Group -->
+      <div class="space-y-4">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span> Exploitability Metrics
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Attack Vector (AV) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Attack Vector (AV)</span>
+              <span id="val-AV" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">N</span>
+            </div>
+            <div id="group-AV" class="grid grid-cols-2 gap-1.5"></div>
+          </div>
+
+          <!-- Attack Complexity (AC) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Attack Complexity (AC)</span>
+              <span id="val-AC" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">L</span>
+            </div>
+            <div id="group-AC" class="grid grid-cols-2 gap-1.5"></div>
+          </div>
+
+          <!-- Privileges Required (PR) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Privileges Required (PR)</span>
+              <span id="val-PR" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">N</span>
+            </div>
+            <div id="group-PR" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+
+          <!-- User Interaction (UI) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">User Interaction (UI)</span>
+              <span id="val-UI" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">N</span>
+            </div>
+            <div id="group-UI" class="grid grid-cols-2 gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scope & Impact Metrics Group -->
+      <div class="space-y-4 pt-2 border-t border-slate-800/80">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-amber-400 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-amber-400"></span> Scope & Impact Metrics
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Scope (S) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Scope (S)</span>
+              <span id="val-S" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">U</span>
+            </div>
+            <div id="group-S" class="grid grid-cols-2 gap-1.5"></div>
+          </div>
+
+          <!-- Confidentiality (C) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Confidentiality (C)</span>
+              <span id="val-C" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">H</span>
+            </div>
+            <div id="group-C" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+
+          <!-- Integrity (I) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Integrity (I)</span>
+              <span id="val-I" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">H</span>
+            </div>
+            <div id="group-I" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+
+          <!-- Availability (A) -->
+          <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3.5 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-semibold text-slate-300">Availability (A)</span>
+              <span id="val-A" class="text-xs font-mono font-bold text-cyan-400 bg-cyan-950/60 border border-cyan-800 px-1.5 py-0.5 rounded">H</span>
+            </div>
+            <div id="group-A" class="grid grid-cols-3 gap-1.5"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Vector Breakdown & Explanations Tab -->
+    <section class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+        <h2 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-indigo-400"></i> Vector Breakdown & Security Summary
+        </h2>
+        <button onclick="copyMarkdownReport()" class="text-xs font-mono bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <i class="fa-brands fa-markdown"></i> Copy Markdown
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3" id="breakdown-grid">
+        <!-- Dynamic Breakdown Cards filled by JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 bg-slate-950/80 py-4 mt-8">
+    <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div>CVSS v3.1 Specification Compliant (FIRST.org Standard)</div>
+      <div class="font-mono text-slate-600">Pure JavaScript • Zero Dependencies</div>
+    </div>
+  </footer>
+
+  <!-- Toast Notification Container -->
+  <div id="toast" class="fixed bottom-6 right-6 transform translate-y-20 opacity-0 transition-all duration-300 bg-cyan-500 text-slate-950 font-bold text-xs px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 z-50 pointer-events-none">
+    <i class="fa-solid fa-check-circle"></i>
+    <span id="toast-message">Copied to clipboard!</span>
+  </div>
+
+  <!-- JavaScript Logic -->
+  <script>
+    // CVSS v3.1 Metric Definitions & Weights
+    const METRICS = {
+      AV: {
+        name: 'Attack Vector',
+        options: [
+          { code: 'N', name: 'Network', value: 0.85, desc: 'Bound to network stack; remotely exploitable across internet' },
+          { code: 'A', name: 'Adjacent', value: 0.62, desc: 'Requires access to same physical or logical network' },
+          { code: 'L', name: 'Local', value: 0.55, desc: 'Requires local system access or local user execution' },
+          { code: 'P', name: 'Physical', value: 0.20, desc: 'Requires direct physical interaction with target device' }
+        ]
+      },
+      AC: {
+        name: 'Attack Complexity',
+        options: [
+          { code: 'L', name: 'Low', value: 0.77, desc: 'No specialized conditions; attack can be repeated reliably' },
+          { code: 'H', name: 'High', value: 0.44, desc: 'Requires specific conditions beyond attacker control (e.g. race condition)' }
+        ]
+      },
+      PR: {
+        name: 'Privileges Required',
+        options: [
+          { code: 'N', name: 'None', value: { U: 0.85, C: 0.85 }, desc: 'No prior authentication or authorization needed' },
+          { code: 'L', name: 'Low', value: { U: 0.62, C: 0.68 }, desc: 'Requires basic user privileges' },
+          { code: 'H', name: 'High', value: { U: 0.27, C: 0.50 }, desc: 'Requires administrative / root privileges' }
+        ]
+      },
+      UI: {
+        name: 'User Interaction',
+        options: [
+          { code: 'N', name: 'None', value: 0.85, desc: 'Vulnerability can be exploited without victim interaction' },
+          { code: 'R', name: 'Required', value: 0.62, desc: 'Requires user to perform an action (e.g., click link, open file)' }
+        ]
+      },
+      S: {
+        name: 'Scope',
+        options: [
+          { code: 'U', name: 'Unchanged', desc: 'Impact is restricted to the vulnerable component' },
+          { code: 'C', name: 'Changed', desc: 'Impact extends beyond the vulnerable component to other systems/components' }
+        ]
+      },
+      C: {
+        name: 'Confidentiality Impact',
+        options: [
+          { code: 'H', name: 'High', value: 0.56, desc: 'Total disclosure of confidential info; all data exposed' },
+          { code: 'L', name: 'Low', value: 0.22, desc: 'Considerable disclosure, but attacker lacks control over what is leaked' },
+          { code: 'N', name: 'None', value: 0.00, desc: 'No loss of confidentiality' }
+        ]
+      },
+      I: {
+        name: 'Integrity Impact',
+        options: [
+          { code: 'H', name: 'High', value: 0.56, desc: 'Total compromise of system integrity; data modified or deleted' },
+          { code: 'L', name: 'Low', value: 0.22, desc: 'Modification of data possible, but limited impact' },
+          { code: 'N', name: 'None', value: 0.00, desc: 'No loss of integrity' }
+        ]
+      },
+      A: {
+        name: 'Availability Impact',
+        options: [
+          { code: 'H', name: 'High', value: 0.56, desc: 'Total loss of availability; complete system outage' },
+          { code: 'L', name: 'Low', value: 0.22, desc: 'Reduced performance or temporary interruptions' },
+          { code: 'N', name: 'None', value: 0.00, desc: 'No loss of availability' }
+        ]
+      }
+    };
+
+    // CVE Vector Presets
+    const PRESETS = {
+      'CVE-2021-44228': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:C/C:H/I:H/A:H', // Log4Shell (10.0)
+      'CVE-2017-0144': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H',   // EternalBlue (9.8)
+      'CVE-2014-0160': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:N/A:N',   // Heartbleed (7.5)
+      'XSS-REFLECTED': 'CVSS:3.1/AV:N/AC:L/PR:N/UI:R/S:C/C:L/I:L/A:N',  // Reflected XSS (6.1)
+      'LOCAL-PRIV-ESC': 'CVSS:3.1/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H', // Local PrivEsc (7.8)
+      'LOW-IMPACT': 'CVSS:3.1/AV:L/AC:H/PR:H/UI:R/S:U/C:L/I:N/A:N'      // Minor info leak (1.8)
+    };
+
+    // Current State
+    let state = {
+      AV: 'N',
+      AC: 'L',
+      PR: 'N',
+      UI: 'N',
+      S: 'U',
+      C: 'H',
+      I: 'H',
+      A: 'H'
+    };
+
+    /**
+     * Exact FIRST CVSS v3.1 Roundup Function
+     * Returns the smallest number >= parameter specified to 1 decimal place.
+     */
+    function roundup(input) {
+      var int_input = Math.round(input * 100000);
+      if (int_input % 10000 === 0) {
+        return int_input / 100000;
+      } else {
+        return (Math.floor(int_input / 10000) + 1) / 10;
+      }
+    }
+
+    /**
+     * Calculates CVSS v3.1 Metrics, Base Score, Likelihood, and Impact
+     */
+    function calculateCVSS(metrics) {
+      const { AV, AC, PR, UI, S, C, I, A } = metrics;
+
+      const avVal = METRICS.AV.options.find(o => o.code === AV).value;
+      const acVal = METRICS.AC.options.find(o => o.code === AC).value;
+      const prVal = METRICS.PR.options.find(o => o.code === PR).value[S];
+      const uiVal = METRICS.UI.options.find(o => o.code === UI).value;
+
+      const cVal = METRICS.C.options.find(o => o.code === C).value;
+      const iVal = METRICS.I.options.find(o => o.code === I).value;
+      const aVal = METRICS.A.options.find(o => o.code === A).value;
+
+      // 1. ISS (Impact Sub-Score Base)
+      const iss = 1 - ((1 - cVal) * (1 - iVal) * (1 - aVal));
+
+      // 2. Impact Sub-score
+      let impact = 0;
+      if (S === 'U') {
+        impact = 6.42 * iss;
+      } else {
+        impact = 7.52 * (iss - 0.029) - 3.25 * Math.pow(iss - 0.02, 15);
+      }
+      if (impact <= 0) impact = 0;
+
+      // 3. Exploitability Sub-score (Likelihood)
+      const exploitability = 8.22 * avVal * acVal * prVal * uiVal;
+
+      // 4. Base Score
+      let baseScore = 0;
+      if (impact > 0) {
+        if (S === 'U') {
+          baseScore = roundup(Math.min(impact + exploitability, 10));
+        } else {
+          baseScore = roundup(Math.min(1.08 * (impact + exploitability), 10));
+        }
+      }
+
+      return {
+        baseScore,
+        severity: getSeverityRating(baseScore),
+        exploitability: parseFloat(exploitability.toFixed(1)),
+        exploitabilityExact: exploitability,
+        exploitabilityRating: getExploitabilityRating(exploitability),
+        impact: parseFloat(impact.toFixed(1)),
+        impactExact: impact,
+        impactRating: getImpactRating(impact),
+        iss: parseFloat(iss.toFixed(3)),
+        vectorString: `CVSS:3.1/AV:${AV}/AC:${AC}/PR:${PR}/UI:${UI}/S:${S}/C:${C}/I:${I}/A:${A}`
+      };
+    }
+
+    function getSeverityRating(score) {
+      if (score === 0) return { label: 'None', color: 'slate', bg: 'bg-slate-500/20', text: 'text-slate-400', border: 'border-slate-500/30', bar: 'bg-slate-500', range: '0.0' };
+      if (score <= 3.9) return { label: 'Low', color: 'blue', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30', bar: 'bg-blue-500', range: '0.1 - 3.9' };
+      if (score <= 6.9) return { label: 'Medium', color: 'amber', bg: 'bg-amber-500/20', text: 'text-amber-400', border: 'border-amber-500/30', bar: 'bg-amber-500', range: '4.0 - 6.9' };
+      if (score <= 8.9) return { label: 'High', color: 'orange', bg: 'bg-orange-500/20', text: 'text-orange-400', border: 'border-orange-500/30', bar: 'bg-orange-500', range: '7.0 - 8.9' };
+      return { label: 'Critical', color: 'red', bg: 'bg-red-500/20', text: 'text-red-400', border: 'border-red-500/30', bar: 'bg-gradient-to-r from-red-500 to-rose-600', range: '9.0 - 10.0' };
+    }
+
+    function getExploitabilityRating(score) {
+      if (score <= 0.2) return { label: 'None', color: 'slate' };
+      if (score <= 1.4) return { label: 'Low', color: 'blue' };
+      if (score <= 2.2) return { label: 'Medium', color: 'amber' };
+      if (score <= 3.1) return { label: 'High', color: 'orange' };
+      return { label: 'Critical', color: 'red' };
+    }
+
+    function getImpactRating(score) {
+      if (score <= 0.2) return { label: 'None', color: 'slate' };
+      if (score <= 1.9) return { label: 'Low', color: 'blue' };
+      if (score <= 3.9) return { label: 'Medium', color: 'amber' };
+      if (score <= 5.2) return { label: 'High', color: 'orange' };
+      return { label: 'Critical', color: 'red' };
+    }
+
+    /**
+     * Parses CVSS Vector string and returns validation status + state object
+     */
+    function parseVectorString(vectorStr) {
+      let str = vectorStr.trim();
+      let errors = [];
+      let parsed = {};
+
+      if (!str) {
+        return { valid: false, errors: ['Vector string cannot be empty.'] };
+      }
+
+      let parts = str.split('/');
+      let hasPrefix = parts[0] === 'CVSS:3.1';
+      let metricParts = hasPrefix ? parts.slice(1) : parts;
+
+      if (hasPrefix && metricParts.length === 0) {
+        return { valid: false, errors: ['Vector string is missing metric components.'] };
+      }
+
+      let requiredKeys = ['AV', 'AC', 'PR', 'UI', 'S', 'C', 'I', 'A'];
+
+      metricParts.forEach(part => {
+        if (!part) return;
+        let [key, val] = part.split(':');
+        if (!key || !val) {
+          errors.push(`Invalid segment format: "${part}"`);
+          return;
+        }
+        key = key.toUpperCase();
+        val = val.toUpperCase();
+
+        if (!METRICS[key]) {
+          errors.push(`Unknown metric key: "${key}"`);
+          return;
+        }
+
+        let validOpt = METRICS[key].options.find(o => o.code === val);
+        if (!validOpt) {
+          errors.push(`Invalid metric value "${val}" for "${key}"`);
+          return;
+        }
+
+        parsed[key] = val;
+      });
+
+      // Check missing required metrics
+      let missing = requiredKeys.filter(k => !parsed[k]);
+      if (missing.length > 0) {
+        errors.push(`Missing required metric(s): ${missing.join(', ')}`);
+      }
+
+      if (errors.length > 0) {
+        return { valid: false, errors, parsed };
+      }
+
+      return { valid: true, parsed };
+    }
+
+    /**
+     * Builds interactive metric selection buttons inside the container grid
+     */
+    function buildMetricButtons() {
+      Object.keys(METRICS).forEach(key => {
+        const container = document.getElementById(`group-${key}`);
+        if (!container) return;
+        container.innerHTML = '';
+
+        METRICS[key].options.forEach(opt => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.dataset.metric = key;
+          btn.dataset.code = opt.code;
+          btn.className = `metric-btn p-2 rounded-lg text-left text-xs font-medium border transition flex flex-col justify-between h-full hover:border-cyan-500/60`;
+          
+          btn.onclick = () => selectMetric(key, opt.code);
+
+          btn.innerHTML = `
+            <div class="flex items-center justify-between w-full mb-1">
+              <span class="font-bold text-slate-200">${opt.name}</span>
+              <span class="font-mono text-[10px] opacity-75 px-1 py-0.5 rounded bg-slate-800">${opt.code}</span>
+            </div>
+            <p class="text-[10px] text-slate-400 leading-tight line-clamp-2">${opt.desc.split(';')[0]}</p>
+          `;
+
+          container.appendChild(btn);
+        });
+      });
+    }
+
+    /**
+     * Handles clicking on a metric button
+     */
+    function selectMetric(key, code) {
+      state[key] = code;
+      updateUI();
+    }
+
+    /**
+     * Updates all UI elements based on current `state`
+     */
+    function updateUI(skipInputUpdate = false) {
+      // 1. Calculate Results
+      const results = calculateCVSS(state);
+
+      // 2. Update Vector Input Field
+      if (!skipInputUpdate) {
+        document.getElementById('vector-input').value = results.vectorString;
+      }
+
+      // Hide error box & update status
+      document.getElementById('error-container').classList.add('hidden');
+      document.getElementById('vector-status').innerHTML = `<i class="fa-solid fa-circle-check"></i> Valid Vector`;
+      document.getElementById('vector-status').className = 'text-xs font-mono flex items-center gap-1.5 text-emerald-400';
+      document.getElementById('vector-input').classList.remove('border-red-500', 'focus:border-red-500');
+
+      // 3. Update Base Score Dashboard
+      document.getElementById('score-display').innerText = results.baseScore.toFixed(1);
+      
+      const sevBadge = document.getElementById('severity-badge');
+      sevBadge.innerText = results.severity.label;
+      sevBadge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${results.severity.bg} ${results.severity.text} ${results.severity.border}`;
+
+      document.getElementById('score-range-text').innerText = `${results.severity.range} (${results.severity.label})`;
+      
+      const scoreBar = document.getElementById('score-bar');
+      scoreBar.style.width = `${(results.baseScore / 10) * 100}%`;
+      scoreBar.className = `h-full rounded-full transition-all duration-500 ${results.severity.bar}`;
+
+      // 4. Update Exploitability Sub-score (Likelihood)
+      document.getElementById('exploitability-score').innerText = results.exploitability.toFixed(1);
+      document.getElementById('exploitability-rating').innerText = results.exploitabilityRating.label;
+      const expPercent = Math.round((results.exploitability / 3.9) * 100);
+      document.getElementById('exploitability-percent').innerText = `${expPercent}%`;
+      document.getElementById('exploitability-bar').style.width = `${Math.min(expPercent, 100)}%`;
+
+      // 5. Update Impact Sub-score
+      document.getElementById('impact-score').innerText = results.impact.toFixed(1);
+      document.getElementById('impact-rating').innerText = results.impactRating.label;
+      document.getElementById('iss-score').innerText = results.iss.toFixed(3);
+      const impPercent = Math.round((results.impact / 6.0) * 100);
+      document.getElementById('impact-percent').innerText = `${impPercent}%`;
+      document.getElementById('impact-bar').style.width = `${Math.min(impPercent, 100)}%`;
+
+      // 6. Update Active Button States in Grid
+      Object.keys(METRICS).forEach(key => {
+        document.getElementById(`val-${key}`).innerText = state[key];
+
+        const buttons = document.querySelectorAll(`[data-metric="${key}"]`);
+        buttons.forEach(btn => {
+          if (btn.dataset.code === state[key]) {
+            btn.classList.add('active', 'bg-cyan-950/80', 'border-cyan-500', 'text-white');
+            btn.classList.remove('bg-slate-900', 'border-slate-800', 'text-slate-400');
+          } else {
+            btn.classList.remove('active', 'bg-cyan-950/80', 'border-cyan-500', 'text-white');
+            btn.classList.add('bg-slate-900/60', 'border-slate-800/80', 'text-slate-400');
+          }
+        });
+      });
+
+      // 7. Update Detailed Breakdown Cards
+      renderBreakdownCards(results);
+    }
+
+    /**
+     * Renders detailed breakdown grid cards
+     */
+    function renderBreakdownCards(results) {
+      const container = document.getElementById('breakdown-grid');
+      container.innerHTML = '';
+
+      Object.keys(METRICS).forEach(key => {
+        const metricObj = METRICS[key];
+        const selectedCode = state[key];
+        const selectedOpt = metricObj.options.find(o => o.code === selectedCode);
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-950/60 border border-slate-800 rounded-xl p-3.5 space-y-1.5';
+        card.innerHTML = `
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400 font-medium">${metricObj.name}</span>
+            <span class="font-mono font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-800/80 px-2 py-0.5 rounded">${key}:${selectedCode}</span>
+          </div>
+          <div class="text-xs font-semibold text-white">${selectedOpt.name}</div>
+          <p class="text-[11px] text-slate-400 leading-normal">${selectedOpt.desc}</p>
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    /**
+     * Applies preset vector string
+     */
+    function applyPreset(presetKey) {
+      if (PRESETS[presetKey]) {
+        document.getElementById('vector-input').value = PRESETS[presetKey];
+        handleInputVector();
+        showToast(`Preset applied: ${presetKey}`);
+      }
+    }
+
+    /**
+     * Resets metrics to default Log4Shell or standard baseline
+     */
+    function resetToDefault() {
+      applyPreset('CVE-2021-44228');
+    }
+
+    /**
+     * Handles text typing/pasting in Vector Input
+     */
+    function handleInputVector() {
+      const inputVal = document.getElementById('vector-input').value;
+      const parsedRes = parseVectorString(inputVal);
+
+      if (parsedRes.valid) {
+        state = { ...parsedRes.parsed };
+        updateUI(true); // Skip updating vector-input value so typing caret doesn't jump
+      } else {
+        // Show validation errors
+        const errContainer = document.getElementById('error-container');
+        const errList = document.getElementById('error-list');
+        const statusEl = document.getElementById('vector-status');
+        const inputEl = document.getElementById('vector-input');
+
+        errList.innerHTML = '';
+        parsedRes.errors.forEach(err => {
+          const li = document.createElement('li');
+          li.innerText = err;
+          errList.appendChild(li);
+        });
+
+        errContainer.classList.remove('hidden');
+        statusEl.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Invalid Vector`;
+        statusEl.className = 'text-xs font-mono flex items-center gap-1.5 text-red-400';
+        inputEl.classList.add('border-red-500', 'focus:border-red-500');
+      }
+    }
+
+    /**
+     * Copy Helper using document.execCommand fallback
+     */
+    function copyToClipboard(text, successMsg = 'Copied to clipboard!') {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (err) {
+        showToast('Failed to copy text.');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function copyVectorString() {
+      const vectorVal = document.getElementById('vector-input').value;
+      copyToClipboard(vectorVal, 'Vector string copied!');
+    }
+
+    function copyExecutiveSummary() {
+      const results = calculateCVSS(state);
+      const summary = `CVSS v3.1 Base Score: ${results.baseScore.toFixed(1)} (${results.severity.label})\nVector: ${results.vectorString}\nExploitability (Likelihood): ${results.exploitability} (${results.exploitabilityRating.label})\nImpact: ${results.impact} (${results.impactRating.label})`;
+      copyToClipboard(summary, 'Executive summary copied!');
+    }
+
+    function copyMarkdownReport() {
+      const results = calculateCVSS(state);
+      const md = `### CVSS v3.1 Assessment Report
+- **CVSS Base Score:** \`${results.baseScore.toFixed(1)}\` (${results.severity.label})
+- **Vector String:** \`${results.vectorString}\`
+- **Likelihood (Exploitability):** \`${results.exploitability}\` (${results.exploitabilityRating.label})
+- **Impact Sub-score:** \`${results.impact}\` (${results.impactRating.label})
+
+#### Metric Breakdown:
+- **Attack Vector (AV):** ${state.AV} (${METRICS.AV.options.find(o => o.code === state.AV).name})
+- **Attack Complexity (AC):** ${state.AC} (${METRICS.AC.options.find(o => o.code === state.AC).name})
+- **Privileges Required (PR):** ${state.PR} (${METRICS.PR.options.find(o => o.code === state.PR).name})
+- **User Interaction (UI):** ${state.UI} (${METRICS.UI.options.find(o => o.code === state.UI).name})
+- **Scope (S):** ${state.S} (${METRICS.S.options.find(o => o.code === state.S).name})
+- **Confidentiality (C):** ${state.C} (${METRICS.C.options.find(o => o.code === state.C).name})
+- **Integrity (I):** ${state.I} (${METRICS.I.options.find(o => o.code === state.I).name})
+- **Availability (A):** ${state.A} (${METRICS.A.options.find(o => o.code === state.A).name})
+`;
+      copyToClipboard(md, 'Markdown report copied!');
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.innerText = message;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Initialize Page
+    window.onload = function() {
+      buildMetricButtons();
+      document.getElementById('vector-input').addEventListener('input', handleInputVector);
+      updateUI();
+    };
+  </script>
+</body>
+</html>
